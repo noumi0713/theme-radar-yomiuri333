@@ -1,0 +1,41 @@
+name: Update market data
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 11:40 and 15:40 Japan time, Monday through Friday.
+    - cron: "40 2 * * 1-5"
+    - cron: "40 6 * * 1-5"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-data-update
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch latest completed TSE session
+        run: python scripts/fetch_market_data.py --skip-unchanged
+
+      - name: Publish updated data feed
+        run: |
+          if git diff --quiet -- app/data/market-data.json; then
+            echo "No completed session change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/data/market-data.json
+          git commit -m "data: refresh latest TSE session"
+          git push
