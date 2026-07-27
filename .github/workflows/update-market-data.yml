@@ -3,9 +3,11 @@ name: Update market data
 on:
   workflow_dispatch:
   schedule:
-    # 11:40 and 15:40 Japan time, Monday through Friday.
-    - cron: "40 2 * * 1-5"
-    - cron: "40 6 * * 1-5"
+    # Retry after each TSE close so a delayed/dropped scheduled event does not
+    # leave the public feed stale. Times are UTC:
+    # 11:40, 11:55, 12:10 and 15:40, 15:55, 16:10 JST on weekdays.
+    - cron: "40,55 2,6 * * 1-5"
+    - cron: "10 3,7 * * 1-5"
 
 permissions:
   contents: write
